@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SentinelOT — Live Attack Simulation</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@400;700;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #080c18;
+      --panel:  #0d1525;
+      --border: #1a2844;
+      --cyan:   #00e5ff;
+      --green:  #00e676;
+      --red:    #ff1744;
+      --orange: #ff6d00;
+      --yellow: #ffd600;
+      --purple: #d500f9;
+      --text:   #cdd6f4;
+      --muted:  #4a5568;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(90deg, #080c18, #0a1628, #080c18);
+      border-bottom: 1px solid var(--cyan);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      border: 2px solid var(--cyan);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      animation: glow 2s infinite;
+    }
+
+    @keyframes glow {
+      0%,100% { box-shadow: 0 0 12px rgba(0,229,255,0.3); }
+      50%      { box-shadow: 0 0 28px rgba(0,229,255,0.7); }
+    }
+
+    .logo-text h1 {
+      font-size: 1rem; font-weight: 900;
+      letter-spacing: 3px; color: var(--cyan);
+      text-transform: uppercase;
+    }
+
+    .logo-text p { font-size: 0.6rem; color: var(--muted); letter-spacing: 1px; }
+
+    .header-right { display: flex; align-items: center; gap: 16px; }
+
+    #clock {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.9rem; color: var(--cyan);
+    }
+
+    .sim-controls { display: flex; gap: 10px; }
+
+    .btn {
+      padding: 8px 18px;
+      border-radius: 6px;
+      border: none;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .btn-start {
+      background: var(--green);
+      color: #000;
+    }
+
+    .btn-start:hover { background: #00ff87; }
+
+    .btn-stop {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .btn-stop:hover { background: #ff4569; }
+
+    .btn-clear {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-clear:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    main { padding: 20px 28px; }
+
+    /* STATS */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+
+    .stat-card.c1::after { background: var(--cyan); }
+    .stat-card.c2::after { background: var(--green); }
+    .stat-card.c3::after { background: var(--red); }
+    .stat-card.c4::after { background: var(--yellow); }
+    .stat-card.c5::after { background: var(--purple); }
+
+    .stat-label {
+      font-size: 0.6rem; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.8rem; font-weight: 700; line-height: 1;
+    }
+
+    .stat-card.c1 .stat-value { color: var(--cyan); }
+    .stat-card.c2 .stat-value { color: var(--green); }
+    .stat-card.c3 .stat-value { color: var(--red); }
+    .stat-card.c4 .stat-value { color: var(--yellow); }
+    .stat-card.c5 .stat-value { color: var(--purple); }
+
+    .stat-sub { font-size: 0.65rem; color: var(--muted); margin-top: 4px; }
+
+    /* GRID */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+
+    .panel-title {
+      font-size: 0.6rem; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .panel-title::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--cyan); border-radius: 50%;
+    }
+
+    /* DEVICE CARDS */
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .device-card {
+      background: #0a1220;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 10px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .device-card.attacking {
+      border-color: var(--red);
+      box-shadow: 0 0 16px rgba(255,23,68,0.3);
+      animation: attackPulse 0.5s ease infinite alternate;
+    }
+
+    @keyframes attackPulse {
+      from { box-shadow: 0 0 8px rgba(255,23,68,0.2); }
+      to   { box-shadow: 0 0 24px rgba(255,23,68,0.6); }
+    }
+
+    .device-card.safe { border-color: var(--green); }
+
+    .device-name {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem; color: var(--cyan); margin-bottom: 6px;
+    }
+
+    .device-score {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.3rem; font-weight: 700;
+    }
+
+    .device-attack {
+      font-size: 0.55rem; margin-top: 4px;
+      letter-spacing: 1px;
+    }
+
+    /* ALERT BANNER */
+    #alertBanner {
+      display: none;
+      background: linear-gradient(90deg, #1a0000, #2d0000, #1a0000);
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 14px 20px;
+      margin-bottom: 16px;
+      animation: flashAlert 0.5s ease infinite alternate;
+    }
+
+    @keyframes flashAlert {
+      from { border-color: #ff1744; background: linear-gradient(90deg,#1a0000,#2d0000,#1a0000); }
+      to   { border-color: #ff6b6b; background: linear-gradient(90deg,#2d0000,#3d0000,#2d0000); }
+    }
+
+    .alert-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .alert-icon { font-size: 1.2rem; }
+
+    .alert-title {
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--red); letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .alert-details {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.75rem; color: var(--text);
+    }
+
+    /* LOG */
+    .log-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 16px;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      display: grid;
+      grid-template-columns: 80px 90px 1fr 110px 160px 80px;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      animation: slideIn 0.3s ease;
+      align-items: center;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .log-entry.attack { background: rgba(255,23,68,0.08); border-left: 3px solid var(--red); }
+    .log-entry.normal { background: rgba(0,230,118,0.04); border-left: 3px solid var(--green); }
+
+    .log-header {
+      display: grid;
+      grid-template-columns: 80px 90px 1fr 110px 160px 80px;
+      gap: 8px;
+      padding: 6px 10px;
+      font-size: 0.58rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      display: inline-block; padding: 2px 7px;
+      border-radius: 4px; font-size: 0.58rem;
+      font-weight: 700; letter-spacing: 1px;
+    }
+
+    .badge-NORMAL            { background:#003300; color:var(--green); }
+    .badge-DDoS              { background:#1a0a00; color:var(--orange); }
+    .badge-SPOOFING          { background:#1a0010; color:var(--purple); }
+    .badge-COMMAND_INJECTION { background:#1a0000; color:var(--red); }
+    .badge-UNAUTHORIZED_ACCESS { background:#1a1400; color:var(--yellow); }
+
+    /* STATUS BAR */
+    .status-bar {
+      display: flex; align-items: center; gap: 16px;
+      padding: 10px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 0.7rem;
+    }
+
+    .status-indicator {
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.running { background: var(--green); animation: pulse 1s infinite; }
+    .status-dot.stopped { background: var(--muted); }
+
+    @keyframes pulse {
+      0%,100% { opacity:1; } 50% { opacity:0.3; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡</div>
+    <div class="logo-text">
+      <h1>SentinelOT — Live Simulation</h1>
+      <p>Real-time ICS Attack Detection · WRAITH Team</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="sim-controls">
+      <button class="btn btn-start" onclick="startSimulation()">▶ Start Simulation</button>
+      <button class="btn btn-stop"  onclick="stopSimulation()">■ Stop</button>
+      <button class="btn btn-clear" onclick="clearLog()">↺ Reset</button>
+    </div>
+    <div id="clock">--:--:--</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-indicator">
+      <div class="status-dot stopped" id="statusDot"></div>
+      <span id="statusText" style="color:var(--muted)">SIMULATION STOPPED — Press Start to begin</span>
+    </div>
+    <span style="color:var(--muted)">|</span>
+    <span style="color:var(--muted)">Events processed: <span id="eventCounter" style="color:var(--cyan)">0</span></span>
+    <span style="color:var(--muted)">|</span>
+    <span style="color:var(--muted)">Attacks caught: <span id="attackCounter" style="color:var(--red)">0</span></span>
+    <span style="color:var(--muted)">|</span>
+    <span style="color:var(--muted)">Detection rate: <span id="detectionRate" style="color:var(--green)">—</span></span>
+  </div>
+
+  <!-- ALERT BANNER -->
+  <div id="alertBanner">
+    <div class="alert-header">
+      <span class="alert-icon">🚨</span>
+      <span class="alert-title" id="alertTitle">CRITICAL THREAT DETECTED</span>
+    </div>
+    <div class="alert-details" id="alertDetails"></div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="stats-row">
+    <div class="stat-card c1">
+      <div class="stat-label">Total Events</div>
+      <div class="stat-value" id="totalEvents">0</div>
+      <div class="stat-sub">Processed in real-time</div>
+    </div>
+    <div class="stat-card c2">
+      <div class="stat-label">Normal Traffic</div>
+      <div class="stat-value" id="normalCount">0</div>
+      <div class="stat-sub">Safe communications</div>
+    </div>
+    <div class="stat-card c3">
+      <div class="stat-label">Threats Caught</div>
+      <div class="stat-value" id="threatCount">0</div>
+      <div class="stat-sub">Detected by AI</div>
+    </div>
+    <div class="stat-card c4">
+      <div class="stat-label">Critical Alerts</div>
+      <div class="stat-value" id="criticalCount">0</div>
+      <div class="stat-sub">Immediate response</div>
+    </div>
+    <div class="stat-card c5">
+      <div class="stat-label">Avg Confidence</div>
+      <div class="stat-value" id="avgConf">—</div>
+      <div class="stat-sub">Model certainty</div>
+    </div>
+  </div>
+
+  <!-- DEVICE CARDS -->
+  <div class="device-grid" id="deviceGrid"></div>
+
+  <!-- LIVE LOG -->
+  <div class="log-wrap">
+    <div class="panel-title">Live Event Stream</div>
+    <div class="log-header">
+      <span>Time</span>
+      <span>Device</span>
+      <span>Command</span>
+      <span>Source IP</span>
+      <span>Attack Type</span>
+      <span>Confidence</span>
+    </div>
+    <div id="logEntries"></div>
+  </div>
+
+</main>
+
+<script>
+// ── CLOCK ─────────────────────────────────────────────
+setInterval(() => {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-US', { hour12:false });
+}, 1000);
+
+// ── SIMULATION DATA ───────────────────────────────────
+const DEVICES   = ['PLC_01','PLC_02','PLC_03','SENSOR_01','SENSOR_02'];
+const TRUSTED   = ['192.168.1.10','192.168.1.11','192.168.1.12'];
+const ATTACKERS = ['192.168.9.99','10.0.0.55','172.16.0.88','10.10.10.5'];
+
+const NORMAL_CMDS = ['READ_SENSOR','WRITE_REGISTER','STATUS_CHECK','HEARTBEAT'];
+const ATTACK_CMDS = ['STOP_MOTOR','OVERRIDE_VALVE','FORCE_WRITE','DISABLE_ALARM'];
+
+const ATTACK_TYPES = ['DDoS','SPOOFING','COMMAND_INJECTION','UNAUTHORIZED_ACCESS'];
+
+const MITRE = {
+  'DDoS'               :{ id:'T0814', sev:'HIGH',     color:'#ff6d00' },
+  'SPOOFING'           :{ id:'T0831', sev:'CRITICAL', color:'#d500f9' },
+  'COMMAND_INJECTION'  :{ id:'T0836', sev:'CRITICAL', color:'#ff1744' },
+  'UNAUTHORIZED_ACCESS':{ id:'T0801', sev:'MEDIUM',   color:'#ffd600' },
+  'NORMAL'             :{ id:'N/A',   sev:'NONE',     color:'#00e676' },
+};
+
+const ATTACK_COLORS = {
+  'NORMAL':'#00e676','DDoS':'#ff6d00',
+  'SPOOFING':'#d500f9','COMMAND_INJECTION':'#ff1744',
+  'UNAUTHORIZED_ACCESS':'#ffd600'
+};
+
+// ── STATE ─────────────────────────────────────────────
+let simInterval  = null;
+let totalEvents  = 0;
+let normalCount  = 0;
+let threatCount  = 0;
+let criticalCount= 0;
+let confSum      = 0;
+let deviceStatus = {};
+
+DEVICES.forEach(d => {
+  deviceStatus[d] = { score:0, attack:'SAFE', attacking:false };
+});
+
+// ── INIT DEVICE CARDS ─────────────────────────────────
+function initDeviceCards() {
+  const grid = document.getElementById('deviceGrid');
+  grid.innerHTML = '';
+  DEVICES.forEach(dev => {
+    grid.innerHTML += `
+      <div class="device-card safe" id="dev-${dev}">
+        <div class="device-name">${dev}</div>
+        <div class="device-score" id="score-${dev}" style="color:var(--green)">0</div>
+        <div class="device-attack" id="attack-${dev}" style="color:var(--green)">✓ SAFE</div>
+      </div>`;
+  });
+}
+
+initDeviceCards();
+
+// ── GENERATE RANDOM EVENT ─────────────────────────────
+function generateEvent() {
+  const isAttack   = Math.random() < 0.3; // 30% chance of attack
+  const now        = new Date();
+  const timestamp  = now.toLocaleTimeString('en-US', { hour12:false });
+  const device     = DEVICES[Math.floor(Math.random() * DEVICES.length)];
+
+  if (!isAttack) {
+    return {
+      timestamp,
+      device,
+      command    : NORMAL_CMDS[Math.floor(Math.random() * NORMAL_CMDS.length)],
+      source_ip  : TRUSTED[Math.floor(Math.random() * TRUSTED.length)],
+      attack_type: 'NORMAL',
+      confidence : (95 + Math.random() * 5).toFixed(1),
+      packet_rate: Math.floor(10 + Math.random() * 40),
+    };
+  } else {
+    const attackType = ATTACK_TYPES[Math.floor(Math.random() * ATTACK_TYPES.length)];
+    return {
+      timestamp,
+      device,
+      command    : ATTACK_CMDS[Math.floor(Math.random() * ATTACK_CMDS.length)],
+      source_ip  : ATTACKERS[Math.floor(Math.random() * ATTACKERS.length)],
+      attack_type: attackType,
+      confidence : (80 + Math.random() * 20).toFixed(1),
+      packet_rate: Math.floor(80 + Math.random() * 200),
+    };
+  }
+}
+
+// ── PROCESS EVENT ─────────────────────────────────────
+function processEvent(event) {
+  const isAttack = event.attack_type !== 'NORMAL';
+  const m        = MITRE[event.attack_type];
+  totalEvents++;
+  confSum += parseFloat(event.confidence);
+
+  if (isAttack) {
+    threatCount++;
+    if (m.sev === 'CRITICAL') criticalCount++;
+
+    // Update device card
+    const card = document.getElementById(`dev-${event.device}`);
+    const scoreEl = document.getElementById(`score-${event.device}`);
+    const attackEl = document.getElementById(`attack-${event.device}`);
+
+    if (card) {
+      card.className = 'device-card attacking';
+      scoreEl.style.color = m.color;
+      scoreEl.textContent = event.confidence;
+      attackEl.style.color = m.color;
+      attackEl.textContent = '⚠ ' + event.attack_type.substring(0,8);
+    }
+
+    // Reset device after 3 seconds
+    setTimeout(() => {
+      if (card) {
+        card.className = 'device-card safe';
+        scoreEl.style.color = 'var(--green)';
+        scoreEl.textContent = '0';
+        attackEl.style.color = 'var(--green)';
+        attackEl.textContent = '✓ SAFE';
+      }
+    }, 3000);
+
+    // Show alert banner for critical
+    if (m.sev === 'CRITICAL') {
+      showAlert(event, m);
+    }
+  } else {
+    normalCount++;
+  }
+
+  // Update stats
+  document.getElementById('totalEvents').textContent  = totalEvents;
+  document.getElementById('normalCount').textContent  = normalCount;
+  document.getElementById('threatCount').textContent  = threatCount;
+  document.getElementById('criticalCount').textContent= criticalCount;
+  document.getElementById('avgConf').textContent =
+    (confSum / totalEvents).toFixed(1) + '%';
+  document.getElementById('eventCounter').textContent = totalEvents;
+  document.getElementById('attackCounter').textContent= threatCount;
+
+  const rate = ((threatCount / totalEvents) * 100).toFixed(1);
+  document.getElementById('detectionRate').textContent = rate + '%';
+
+  // Add to log
+  addLogEntry(event, m);
+}
+
+// ── ALERT BANNER ──────────────────────────────────────
+function showAlert(event, m) {
+  const banner = document.getElementById('alertBanner');
+  banner.style.display = 'block';
+  document.getElementById('alertTitle').textContent =
+    `🚨 ${m.sev} ALERT — ${event.attack_type} DETECTED`;
+  document.getElementById('alertDetails').textContent =
+    `Device: ${event.device}  |  Source IP: ${event.source_ip}  |  ` +
+    `Confidence: ${event.confidence}%  |  MITRE: ${m.id}  |  ` +
+    `Command: ${event.command}`;
+
+  setTimeout(() => { banner.style.display = 'none'; }, 4000);
+}
+
+// ── LOG ENTRY ─────────────────────────────────────────
+function addLogEntry(event, m) {
+  const logEl  = document.getElementById('logEntries');
+  const isAtk  = event.attack_type !== 'NORMAL';
+  const col    = ATTACK_COLORS[event.attack_type] || '#00e676';
+
+  const entry  = document.createElement('div');
+  entry.className = `log-entry ${isAtk ? 'attack' : 'normal'}`;
+  entry.innerHTML = `
+    <span style="color:var(--muted)">${event.timestamp}</span>
+    <span style="color:var(--cyan)">${event.device}</span>
+    <span>${event.command}</span>
+    <span style="color:var(--muted)">${event.source_ip}</span>
+    <span><span class="badge badge-${event.attack_type}">${event.attack_type}</span></span>
+    <span style="color:${col}">${event.confidence}%</span>
+  `;
+
+  logEl.insertBefore(entry, logEl.firstChild);
+
+  // Keep log manageable
+  while (logEl.children.length > 50) {
+    logEl.removeChild(logEl.lastChild);
+  }
+}
+
+// ── SIMULATION CONTROLS ───────────────────────────────
+function startSimulation() {
+  if (simInterval) return;
+
+  document.getElementById('statusDot').className = 'status-dot running';
+  document.getElementById('statusText').textContent =
+    'SIMULATION RUNNING — AI monitoring live network traffic';
+  document.getElementById('statusText').style.color = 'var(--green)';
+
+  simInterval = setInterval(() => {
+    const event = generateEvent();
+    processEvent(event);
+  }, 1500); // new event every 1.5 seconds
+}
+
+function stopSimulation() {
+  clearInterval(simInterval);
+  simInterval = null;
+  document.getElementById('statusDot').className = 'status-dot stopped';
+  document.getElementById('statusText').textContent = 'SIMULATION STOPPED';
+  document.getElementById('statusText').style.color = 'var(--muted)';
+}
+
+function clearLog() {
+  stopSimulation();
+  totalEvents = normalCount = threatCount = criticalCount = confSum = 0;
+  document.getElementById('logEntries').innerHTML = '';
+  document.getElementById('totalEvents').textContent  = '0';
+  document.getElementById('normalCount').textContent  = '0';
+  document.getElementById('threatCount').textContent  = '0';
+  document.getElementById('criticalCount').textContent= '0';
+  document.getElementById('avgConf').textContent      = '—';
+  document.getElementById('eventCounter').textContent = '0';
+  document.getElementById('attackCounter').textContent= '0';
+  document.getElementById('detectionRate').textContent= '—';
+  document.getElementById('alertBanner').style.display= 'none';
+  initDeviceCards();
+}
+</script>
+</body>
+</html>
