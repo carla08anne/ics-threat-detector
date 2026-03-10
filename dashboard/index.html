@@ -540,7 +540,34 @@
       <div class="feature-list" id="featureList"></div>
     </div>
   </div>
+<!-- FORECAST PANEL -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;padding:0 24px">
 
+    <!-- PREDICTIVE FORECASTING -->
+    <div class="panel" id="forecastPanel">
+      <div class="panel-title">🔮 Predictive Attack Forecasting</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div>
+          <div style="font-size:0.6rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Current Threat</div>
+          <div id="currentThreat" style="font-family:'Share Tech Mono',monospace;font-size:1rem;color:var(--red)">—</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:0.6rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Status</div>
+          <div id="escalatingBadge" style="font-size:0.7rem;color:var(--muted)">MONITORING</div>
+        </div>
+      </div>
+      <div style="font-size:0.6rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Next Attack Predictions</div>
+      <div id="forecastBars" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div id="forecastRec" style="margin-top:14px;padding:10px;background:#050810;border:1px solid var(--border);border-radius:6px;font-size:0.72rem;color:var(--yellow)"></div>
+    </div>
+
+    <!-- KILL CHAIN TIMELINE -->
+    <div class="panel">
+      <div class="panel-title">⛓ Attack Kill Chain Timeline</div>
+      <div id="killChain" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+  </div>
   <!-- ROW 3: Live Log -->
   <div class="panel table-wrap">
     <div class="panel-title">Live Threat Log — Click any attack for defense recommendations</div>
@@ -755,6 +782,98 @@ function renderDashboard(data) {
         <td style="color:var(--purple);font-size:0.65rem">${m.id}</td>
         <td class="sev-${m.sev}">${m.sev}</td>
       </tr>`;
+  });
+  // ── FORECAST ENGINE ──
+  const forecaster = {
+    transitions: {
+      'NORMAL'             : {'COMMAND_INJECTION':0.03,'DDoS':0.08,'SPOOFING':0.04,'UNAUTHORIZED_ACCESS':0.15},
+      'UNAUTHORIZED_ACCESS': {'COMMAND_INJECTION':0.30,'DDoS':0.10,'SPOOFING':0.15,'UNAUTHORIZED_ACCESS':0.25},
+      'DDoS'               : {'COMMAND_INJECTION':0.20,'DDoS':0.45,'SPOOFING':0.08,'UNAUTHORIZED_ACCESS':0.12},
+      'SPOOFING'           : {'COMMAND_INJECTION':0.45,'DDoS':0.12,'SPOOFING':0.25,'UNAUTHORIZED_ACCESS':0.08},
+      'COMMAND_INJECTION'  : {'COMMAND_INJECTION':0.40,'DDoS':0.15,'SPOOFING':0.25,'UNAUTHORIZED_ACCESS':0.10},
+    },
+    predict(current) {
+      const t = this.transitions[current] || this.transitions['NORMAL'];
+      return Object.entries(t)
+        .map(([k,v]) => ({attack:k, prob:Math.round(v*100)}))
+        .sort((a,b) => b.prob - a.prob);
+    }
+  };
+
+  const recentAttacks = data.filter(r => r.predicted_attack !== 'NORMAL').slice(0,5).reverse();
+  const lastAttack    = recentAttacks[recentAttacks.length - 1];
+
+  if (lastAttack) {
+    const current     = lastAttack.predicted_attack;
+    const predictions = forecaster.predict(current);
+    const colors      = {
+      'COMMAND_INJECTION':'#ff1744','DDoS':'#ff6d00',
+      'SPOOFING':'#d500f9','UNAUTHORIZED_ACCESS':'#ffd600'
+    };
+
+    document.getElementById('currentThreat').textContent = current;
+    document.getElementById('currentThreat').style.color = colors[current] || '#ff1744';
+
+    const sevScores  = {'NORMAL':0,'UNAUTHORIZED_ACCESS':2,'DDoS':3,'SPOOFING':4,'COMMAND_INJECTION':5};
+    const scores     = recentAttacks.map(r => sevScores[r.predicted_attack] || 0);
+    const escalating = scores.length > 1 && scores[scores.length-1] > scores[0];
+
+    const badge      = document.getElementById('escalatingBadge');
+    badge.textContent = escalating ? '⚠️ ESCALATING' : '✓ STABLE';
+    badge.style.color = escalating ? 'var(--red)' : 'var(--green)';
+
+    const barsEl = document.getElementById('forecastBars');
+    barsEl.innerHTML = '';
+    predictions.slice(0,3).forEach(p => {
+      const col = colors[p.attack] || '#cdd6f4';
+      barsEl.innerHTML += `
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;
+                       color:${col};width:180px;flex-shrink:0">${p.attack}</span>
+          <div style="flex:1;background:#0a1220;border-radius:3px;height:6px">
+            <div style="width:${p.prob}%;height:100%;border-radius:3px;background:${col}"></div>
+          </div>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;
+                       color:${col};width:36px;text-align:right">${p.prob}%</span>
+        </div>`;
+    });
+
+    const recs = {
+      'COMMAND_INJECTION'  : '💡 Pre-emptively restrict PLC write access',
+      'DDoS'               : '💡 Enable rate limiting on all devices now',
+      'SPOOFING'           : '💡 Verify IP-MAC bindings immediately',
+      'UNAUTHORIZED_ACCESS': '💡 Strengthen authentication on SCADA',
+    };
+    document.getElementById('forecastRec').textContent =
+      recs[predictions[0].attack] || '💡 Monitor network closely';
+  }
+
+  // ── KILL CHAIN TIMELINE ──
+  const killChain   = document.getElementById('killChain');
+  killChain.innerHTML = '';
+  const chainEvents = data.filter(r => r.predicted_attack !== 'NORMAL').slice(0,6).reverse();
+  const chainColors = {
+    'COMMAND_INJECTION':'#ff1744','DDoS':'#ff6d00',
+    'SPOOFING':'#d500f9','UNAUTHORIZED_ACCESS':'#ffd600','NORMAL':'#00e676'
+  };
+
+  chainEvents.forEach((event, i) => {
+    const col    = chainColors[event.predicted_attack] || '#cdd6f4';
+    const isLast = i === chainEvents.length - 1;
+    killChain.innerHTML += `
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <div style="width:10px;height:10px;border-radius:50%;
+                      background:${col};flex-shrink:0;
+                      box-shadow:0 0 8px ${col}"></div>
+          ${!isLast ? `<div style="width:1px;height:20px;background:var(--border)"></div>` : ''}
+        </div>
+        <div style="padding-bottom:8px">
+          <div style="font-family:'Share Tech Mono',monospace;
+                      font-size:0.65rem;color:${col}">${event.predicted_attack}</div>
+          <div style="font-size:0.6rem;color:var(--muted)">${event.timestamp} · ${event.device}</div>
+        </div>
+      </div>`;
   });
 }
 

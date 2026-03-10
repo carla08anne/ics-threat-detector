@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SentinelOT — Network Topology</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@400;700;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #080c18;
+      --panel:  #0d1525;
+      --border: #1a2844;
+      --cyan:   #00e5ff;
+      --green:  #00e676;
+      --red:    #ff1744;
+      --orange: #ff6d00;
+      --yellow: #ffd600;
+      --purple: #d500f9;
+      --text:   #cdd6f4;
+      --muted:  #4a5568;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(90deg, #080c18, #0a1628, #080c18);
+      border-bottom: 1px solid var(--cyan);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      border: 2px solid var(--cyan);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      animation: glow 2s infinite;
+    }
+
+    @keyframes glow {
+      0%,100% { box-shadow: 0 0 12px rgba(0,229,255,0.3); }
+      50%      { box-shadow: 0 0 28px rgba(0,229,255,0.7); }
+    }
+
+    .logo-text h1 {
+      font-size: 1rem; font-weight: 900;
+      letter-spacing: 3px; color: var(--cyan);
+      text-transform: uppercase;
+    }
+
+    .logo-text p { font-size: 0.6rem; color: var(--muted); letter-spacing: 1px; }
+
+    .header-right { display: flex; align-items: center; gap: 16px; }
+
+    #clock {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.9rem; color: var(--cyan);
+    }
+
+    .btn {
+      padding: 8px 18px;
+      border-radius: 6px; border: none;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 1px; cursor: pointer;
+      transition: all 0.2s; text-transform: uppercase;
+    }
+
+    .btn-start { background: var(--green); color: #000; }
+    .btn-stop  { background: var(--red);   color: #fff; }
+    .btn-reset { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+    /* LAYOUT */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      height: calc(100vh - 65px);
+    }
+
+    /* TOPOLOGY CANVAS */
+    .topology-area {
+      position: relative;
+      padding: 20px;
+    }
+
+    canvas#topoCanvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* SIDE PANEL */
+    .side-panel {
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-title {
+      font-size: 0.6rem; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .panel-title::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--cyan); border-radius: 50%;
+    }
+
+    /* STATS */
+    .mini-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mini-stat {
+      background: #0a1220;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .mini-stat .val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.4rem; font-weight: 700;
+    }
+
+    .mini-stat .lbl {
+      font-size: 0.55rem; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ALERT LOG */
+    .alert-log { display: flex; flex-direction: column; gap: 6px; }
+
+    .alert-item {
+      background: #0a1220;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      animation: slideIn 0.3s ease;
+      border-left: 3px solid;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .alert-item.CRITICAL { border-left-color: var(--red); }
+    .alert-item.HIGH     { border-left-color: var(--orange); }
+    .alert-item.MEDIUM   { border-left-color: var(--yellow); }
+    .alert-item.NONE     { border-left-color: var(--green); }
+
+    .alert-type {
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 1px; margin-bottom: 3px;
+    }
+
+    .alert-detail {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem; color: var(--muted);
+    }
+
+    /* LEGEND */
+    .legend { display: flex; flex-direction: column; gap: 6px; }
+
+    .legend-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.7rem; color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡</div>
+    <div class="logo-text">
+      <h1>SentinelOT — Network Topology</h1>
+      <p>Live Industrial Network Map · Cipher blitz</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-start" onclick="startSim()">▶ Simulate Attack</button>
+    <button class="btn btn-reset" onclick="resetAll()">↺ Reset</button>
+    <div id="clock">--:--:--</div>
+  </div>
+</header>
+
+<div class="main-layout">
+
+  <!-- TOPOLOGY CANVAS -->
+  <div class="topology-area">
+    <canvas id="topoCanvas"></canvas>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side-panel">
+
+    <!-- STATS -->
+    <div>
+      <div class="panel-title">Network Status</div>
+      <div class="mini-stats">
+        <div class="mini-stat">
+          <div class="val" id="totalNodes" style="color:var(--cyan)">9</div>
+          <div class="lbl">Devices</div>
+        </div>
+        <div class="mini-stat">
+          <div class="val" id="threatenedNodes" style="color:var(--red)">0</div>
+          <div class="lbl">Under Attack</div>
+        </div>
+        <div class="mini-stat">
+          <div class="val" id="totalAlerts" style="color:var(--yellow)">0</div>
+          <div class="lbl">Total Alerts</div>
+        </div>
+        <div class="mini-stat">
+          <div class="val" id="networkHealth" style="color:var(--green)">100%</div>
+          <div class="lbl">Health</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEGEND -->
+    <div>
+      <div class="panel-title">Legend</div>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--cyan)"></div>
+          SCADA Server
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--green)"></div>
+          Normal Device
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--red)"></div>
+          Under Attack
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--yellow)"></div>
+          Warning / Suspicious
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--orange)"></div>
+          Attacker Node
+        </div>
+      </div>
+    </div>
+
+    <!-- ALERT LOG -->
+    <div style="flex:1">
+      <div class="panel-title">Live Alert Log</div>
+      <div class="alert-log" id="alertLog"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── CLOCK ─────────────────────────────────────────────
+setInterval(() => {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-US', { hour12:false });
+}, 1000);
+
+// ── CANVAS SETUP ──────────────────────────────────────
+const canvas = document.getElementById('topoCanvas');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const area = canvas.parentElement;
+  canvas.width  = area.clientWidth  - 40;
+  canvas.height = area.clientHeight - 40;
+  drawTopology();
+}
+
+window.addEventListener('resize', resizeCanvas);
+
+// ── NETWORK NODES ─────────────────────────────────────
+function getNodes() {
+  const W = canvas.width;
+  const H = canvas.height;
+  const cx = W / 2;
+  const cy = H / 2;
+
+  return {
+    // Top level
+    INTERNET : { x: cx,        y: 60,         label: 'INTERNET',    icon: '🌐', type: 'external', color: '#4a5568', size: 28 },
+    FIREWALL : { x: cx,        y: 150,        label: 'FIREWALL',    icon: '🔥', type: 'firewall', color: '#ffd600', size: 28 },
+    SCADA    : { x: cx,        y: 260,        label: 'SCADA\nSERVER', icon: '💻', type: 'scada',   color: '#00e5ff', size: 32 },
+
+    // PLCs
+    PLC_01   : { x: cx - 220, y: 390,        label: 'PLC_01',      icon: '⚙️',  type: 'plc',     color: '#00e676', size: 26 },
+    PLC_02   : { x: cx,       y: 390,        label: 'PLC_02',      icon: '⚙️',  type: 'plc',     color: '#00e676', size: 26 },
+    PLC_03   : { x: cx + 220, y: 390,        label: 'PLC_03',      icon: '⚙️',  type: 'plc',     color: '#00e676', size: 26 },
+
+    // Sensors
+    SENSOR_01: { x: cx - 320, y: 510,        label: 'SENSOR_01',   icon: '📡',  type: 'sensor',  color: '#00e676', size: 22 },
+    SENSOR_02: { x: cx,       y: 510,        label: 'SENSOR_02',   icon: '📡',  type: 'sensor',  color: '#00e676', size: 22 },
+    SENSOR_03: { x: cx + 320, y: 510,        label: 'SENSOR_03',   icon: '📡',  type: 'sensor',  color: '#00e676', size: 22 },
+
+    // Attacker (hidden initially)
+    ATTACKER : { x: cx + 380, y: 150,        label: 'ATTACKER',    icon: '💀',  type: 'attacker',color: '#ff1744', size: 26, hidden: true },
+  };
+}
+
+// ── CONNECTIONS ───────────────────────────────────────
+const CONNECTIONS = [
+  ['INTERNET', 'FIREWALL'],
+  ['FIREWALL', 'SCADA'],
+  ['SCADA',    'PLC_01'],
+  ['SCADA',    'PLC_02'],
+  ['SCADA',    'PLC_03'],
+  ['PLC_01',   'SENSOR_01'],
+  ['PLC_02',   'SENSOR_02'],
+  ['PLC_03',   'SENSOR_03'],
+];
+
+// ── STATE ─────────────────────────────────────────────
+let nodes          = getNodes();
+let attackedNodes  = new Set();
+let warningNodes   = new Set();
+let attackPackets  = [];
+let totalAlerts    = 0;
+let simInterval    = null;
+let pulseFrame     = 0;
+
+// ── DRAW ──────────────────────────────────────────────
+function drawTopology() {
+  if (!canvas.width) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw grid background
+  ctx.strokeStyle = 'rgba(26,40,68,0.4)';
+  ctx.lineWidth   = 1;
+  for (let x = 0; x < canvas.width; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+
+  // Draw connections
+  CONNECTIONS.forEach(([a, b]) => {
+    const n1 = nodes[a];
+    const n2 = nodes[b];
+    if (!n1 || !n2) return;
+
+    const isAttackPath = attackedNodes.has(a) && attackedNodes.has(b);
+    const isWarnPath   = warningNodes.has(a)   || warningNodes.has(b);
+
+    ctx.beginPath();
+    ctx.moveTo(n1.x, n1.y);
+    ctx.lineTo(n2.x, n2.y);
+
+    if (isAttackPath) {
+      ctx.strokeStyle = `rgba(255,23,68,${0.4 + Math.sin(pulseFrame*0.1)*0.3})`;
+      ctx.lineWidth   = 2.5;
+      ctx.setLineDash([6, 4]);
+    } else if (isWarnPath) {
+      ctx.strokeStyle = 'rgba(255,214,0,0.4)';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([4, 4]);
+    } else {
+      ctx.strokeStyle = 'rgba(26,40,68,0.9)';
+      ctx.lineWidth   = 1.5;
+      ctx.setLineDash([]);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Draw attacker connection if visible
+  if (!nodes.ATTACKER.hidden && attackedNodes.size > 0) {
+    const target = nodes[Array.from(attackedNodes)[0]];
+    if (target) {
+      ctx.beginPath();
+      ctx.moveTo(nodes.ATTACKER.x, nodes.ATTACKER.y);
+      ctx.lineTo(target.x, target.y);
+      ctx.strokeStyle = `rgba(255,23,68,${0.6 + Math.sin(pulseFrame*0.15)*0.4})`;
+      ctx.lineWidth   = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Draw attack packets
+  attackPackets.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.shadowBlur   = 12;
+    ctx.shadowColor  = p.color;
+    ctx.fill();
+    ctx.shadowBlur   = 0;
+  });
+
+  // Draw nodes
+  Object.entries(nodes).forEach(([id, node]) => {
+    if (node.hidden) return;
+
+    const isAttacked = attackedNodes.has(id);
+    const isWarning  = warningNodes.has(id);
+    const pulse      = Math.sin(pulseFrame * 0.1) * 0.5 + 0.5;
+
+    // Glow effect
+    if (isAttacked) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, node.size + 12 + pulse * 8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,23,68,${0.1 + pulse * 0.15})`;
+      ctx.fill();
+    } else if (isWarning) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, node.size + 8, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,214,0,0.1)';
+      ctx.fill();
+    }
+
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2);
+
+    const color = isAttacked ? '#ff1744' :
+                  isWarning  ? '#ffd600' : node.color;
+
+    ctx.fillStyle   = '#0d1525';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = isAttacked ? 2.5 : 1.5;
+    ctx.stroke();
+
+    // Icon
+    ctx.font      = `${node.size * 0.8}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(node.icon, node.x, node.y);
+
+    // Label
+    ctx.font         = "bold 11px 'Exo 2', sans-serif";
+    ctx.fillStyle    = isAttacked ? '#ff1744' :
+                       isWarning  ? '#ffd600' : '#cdd6f4';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+
+    const lines = node.label.split('\n');
+    lines.forEach((line, i) => {
+      ctx.fillText(line, node.x, node.y + node.size + 6 + i * 13);
+    });
+
+    // Status badge for attacked nodes
+    if (isAttacked) {
+      ctx.font      = "bold 9px 'Share Tech Mono', monospace";
+      ctx.fillStyle = '#ff1744';
+      ctx.fillText('⚠ ATTACK', node.x, node.y + node.size + 32);
+    }
+  });
+
+  pulseFrame++;
+}
+
+// ── ANIMATION LOOP ────────────────────────────────────
+function animate() {
+  // Move attack packets
+  attackPackets = attackPackets.filter(p => {
+    p.progress += 0.02;
+    p.x = p.startX + (p.endX - p.startX) * p.progress;
+    p.y = p.startY + (p.endY - p.startY) * p.progress;
+    return p.progress < 1;
+  });
+
+  drawTopology();
+  requestAnimationFrame(animate);
+}
+
+// ── ATTACK PACKET ─────────────────────────────────────
+function sendPacket(fromId, toId, color) {
+  const from = nodes[fromId];
+  const to   = nodes[toId];
+  if (!from || !to) return;
+
+  attackPackets.push({
+    startX: from.x, startY: from.y,
+    endX: to.x,     endY: to.y,
+    x: from.x,      y: from.y,
+    progress: 0,    color,
+  });
+}
+
+// ── ADD ALERT ─────────────────────────────────────────
+function addAlert(type, device, detail, severity) {
+  totalAlerts++;
+  document.getElementById('totalAlerts').textContent = totalAlerts;
+
+  const colors = {
+    CRITICAL: '#ff1744', HIGH: '#ff6d00', MEDIUM: '#ffd600', NONE: '#00e676'
+  };
+
+  const log  = document.getElementById('alertLog');
+  const item = document.createElement('div');
+  item.className = `alert-item ${severity}`;
+  item.innerHTML = `
+    <div class="alert-type" style="color:${colors[severity]||'#cdd6f4'}">
+      ${severity} — ${type}
+    </div>
+    <div class="alert-detail">${device} · ${detail}</div>
+    <div class="alert-detail">${new Date().toLocaleTimeString()}</div>
+  `;
+  log.insertBefore(item, log.firstChild);
+  while (log.children.length > 8) log.removeChild(log.lastChild);
+
+  // Update health
+  const attacked = attackedNodes.size;
+  const health   = Math.max(0, Math.round((1 - attacked/9) * 100));
+  document.getElementById('networkHealth').textContent = health + '%';
+  document.getElementById('networkHealth').style.color =
+    health > 70 ? 'var(--green)' : health > 40 ? 'var(--yellow)' : 'var(--red)';
+  document.getElementById('threatenedNodes').textContent = attacked;
+}
+
+// ── ATTACK SCENARIOS ──────────────────────────────────
+const SCENARIOS = [
+  {
+    name    : 'UNAUTHORIZED_ACCESS',
+    severity: 'MEDIUM',
+    steps   : [
+      () => {
+        nodes.ATTACKER.hidden = false;
+        sendPacket('ATTACKER', 'FIREWALL', '#ffd600');
+        warningNodes.add('FIREWALL');
+        addAlert('UNAUTHORIZED_ACCESS', 'FIREWALL',
+          'Unknown IP probing firewall — 192.168.9.99', 'MEDIUM');
+      },
+      () => {
+        sendPacket('ATTACKER', 'SCADA', '#ffd600');
+        warningNodes.add('SCADA');
+        addAlert('UNAUTHORIZED_ACCESS', 'SCADA',
+          'Auth attempts spiking — 8 failures', 'MEDIUM');
+      },
+    ]
+  },
+  {
+    name    : 'COMMAND_INJECTION',
+    severity: 'CRITICAL',
+    steps   : [
+      () => {
+        sendPacket('ATTACKER', 'PLC_02', '#ff1744');
+        attackedNodes.add('PLC_02');
+        addAlert('COMMAND_INJECTION', 'PLC_02',
+          'FORCE_WRITE from unknown IP — MITRE T0836', 'CRITICAL');
+      },
+      () => {
+        sendPacket('PLC_02', 'SENSOR_02', '#ff1744');
+        attackedNodes.add('SENSOR_02');
+        addAlert('COMMAND_INJECTION', 'SENSOR_02',
+          'Malicious command propagating to sensor', 'CRITICAL');
+      },
+    ]
+  },
+  {
+    name    : 'DDoS',
+    severity: 'HIGH',
+    steps   : [
+      () => {
+        sendPacket('ATTACKER', 'SCADA', '#ff6d00');
+        sendPacket('ATTACKER', 'SCADA', '#ff6d00');
+        sendPacket('ATTACKER', 'SCADA', '#ff6d00');
+        attackedNodes.add('SCADA');
+        addAlert('DDoS', 'SCADA',
+          'Packet flood — rate 287/min — MITRE T0814', 'HIGH');
+      },
+      () => {
+        attackedNodes.add('PLC_01');
+        attackedNodes.add('PLC_03');
+        addAlert('DDoS', 'PLC_01 + PLC_03',
+          'DDoS spreading — PLCs unreachable', 'HIGH');
+      },
+    ]
+  },
+  {
+    name    : 'SPOOFING',
+    severity: 'CRITICAL',
+    steps   : [
+      () => {
+        sendPacket('ATTACKER', 'PLC_01', '#d500f9');
+        attackedNodes.add('PLC_01');
+        addAlert('SPOOFING', 'PLC_01',
+          'Trusted IP sending OVERRIDE_VALVE — MITRE T0831', 'CRITICAL');
+      },
+      () => {
+        sendPacket('PLC_01', 'SENSOR_01', '#d500f9');
+        attackedNodes.add('SENSOR_01');
+        addAlert('SPOOFING', 'SENSOR_01',
+          'Sensor readings being manipulated', 'CRITICAL');
+      },
+    ]
+  },
+];
+
+// ── SIMULATION ────────────────────────────────────────
+let scenarioIndex = 0;
+let stepIndex     = 0;
+
+function startSim() {
+  if (simInterval) return;
+  simInterval = setInterval(() => {
+    const scenario = SCENARIOS[scenarioIndex % SCENARIOS.length];
+    if (stepIndex < scenario.steps.length) {
+      scenario.steps[stepIndex]();
+      stepIndex++;
+    } else {
+      scenarioIndex++;
+      stepIndex = 0;
+    }
+  }, 2000);
+}
+
+function resetAll() {
+  clearInterval(simInterval);
+  simInterval   = null;
+  attackedNodes = new Set();
+  warningNodes  = new Set();
+  attackPackets = [];
+  totalAlerts   = 0;
+  scenarioIndex = 0;
+  stepIndex     = 0;
+  nodes         = getNodes();
+  document.getElementById('alertLog').innerHTML       = '';
+  document.getElementById('totalAlerts').textContent  = '0';
+  document.getElementById('threatenedNodes').textContent = '0';
+  document.getElementById('networkHealth').textContent   = '100%';
+  document.getElementById('networkHealth').style.color   = 'var(--green)';
+}
+
+// ── START ─────────────────────────────────────────────
+resizeCanvas();
+animate();
+</script>
+</body>
+</html>
