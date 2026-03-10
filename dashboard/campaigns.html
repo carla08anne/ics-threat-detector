@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SentinelOT — Attack Campaigns</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@400;700;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #080c18;
+      --panel:  #0d1525;
+      --border: #1a2844;
+      --cyan:   #00e5ff;
+      --green:  #00e676;
+      --red:    #ff1744;
+      --orange: #ff6d00;
+      --yellow: #ffd600;
+      --purple: #d500f9;
+      --text:   #cdd6f4;
+      --muted:  #4a5568;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(90deg, #080c18, #0a1628, #080c18);
+      border-bottom: 1px solid var(--cyan);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      border: 2px solid var(--cyan);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      box-shadow: 0 0 12px rgba(0,229,255,0.3);
+    }
+
+    .logo-text h1 {
+      font-size: 1rem; font-weight: 900;
+      letter-spacing: 3px; color: var(--cyan);
+      text-transform: uppercase;
+    }
+
+    .logo-text p { font-size: 0.6rem; color: var(--muted); letter-spacing: 1px; }
+
+    .nav { display: flex; gap: 8px; }
+
+    .nav a {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 1px;
+      text-decoration: none;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+
+    .nav a:hover, .nav a.active {
+      color: var(--cyan);
+      border-color: var(--cyan);
+    }
+
+    .main { padding: 24px 28px; max-width: 1400px; margin: 0 auto; }
+
+    /* STAT CARDS */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      border-top: 2px solid;
+    }
+
+    .stat-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 2rem; font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stat-lbl {
+      font-size: 0.6rem; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--muted);
+    }
+
+    /* CAMPAIGN CARDS */
+    .campaigns-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .campaign-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      border-left: 4px solid;
+      animation: slideIn 0.4s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .campaign-card.CRITICAL { border-left-color: var(--red); }
+    .campaign-card.HIGH     { border-left-color: var(--orange); }
+    .campaign-card.MEDIUM   { border-left-color: var(--yellow); }
+
+    .campaign-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .campaign-name {
+      font-size: 1.1rem; font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .campaign-meta {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem; color: var(--muted);
+    }
+
+    .severity-badge {
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .badge-CRITICAL { background: rgba(255,23,68,0.15);  color: var(--red);    border: 1px solid var(--red); }
+    .badge-HIGH     { background: rgba(255,109,0,0.15);  color: var(--orange); border: 1px solid var(--orange); }
+    .badge-MEDIUM   { background: rgba(255,214,0,0.15);  color: var(--yellow); border: 1px solid var(--yellow); }
+
+    .campaign-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .campaign-section-title {
+      font-size: 0.55rem; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* MITRE CHAIN */
+    .mitre-chain {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .mitre-tag {
+      padding: 3px 8px;
+      background: rgba(213,0,249,0.1);
+      border: 1px solid var(--purple);
+      border-radius: 4px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--purple);
+    }
+
+    .mitre-arrow {
+      color: var(--muted);
+      font-size: 0.7rem;
+    }
+
+    /* EVENT TIMELINE */
+    .event-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .timeline-event {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+    }
+
+    .timeline-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* DESCRIPTION BOX */
+    .description-box {
+      background: #050810;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 0.72rem;
+      color: var(--text);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .real-example {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.65rem;
+      color: var(--yellow);
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 60px;
+      color: var(--muted);
+    }
+
+    .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 1.1rem; margin-bottom: 8px; color: var(--green); }
+    .empty-state p  { font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡</div>
+    <div class="logo-text">
+      <h1>SentinelOT — Attack Campaigns</h1>
+      <p>Multi-Stage Attack Correlation · Cipher Blitz</p>
+    </div>
+  </div>
+  <nav class="nav">
+    <a href="/dashboard/index.html">Dashboard</a>
+    <a href="/dashboard/simulation.html">Simulation</a>
+    <a href="/dashboard/topology.html">Topology</a>
+    <a href="/dashboard/campaigns.html" class="active">Campaigns</a>
+  </nav>
+</header>
+
+<div class="main">
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card" style="border-top-color:var(--cyan)">
+      <div class="stat-val" id="totalCampaigns" style="color:var(--cyan)">0</div>
+      <div class="stat-lbl">Campaigns Detected</div>
+    </div>
+    <div class="stat-card" style="border-top-color:var(--red)">
+      <div class="stat-val" id="criticalCampaigns" style="color:var(--red)">0</div>
+      <div class="stat-lbl">Critical Campaigns</div>
+    </div>
+    <div class="stat-card" style="border-top-color:var(--orange)">
+      <div class="stat-val" id="uniqueAttackers" style="color:var(--orange)">0</div>
+      <div class="stat-lbl">Unique Attackers</div>
+    </div>
+    <div class="stat-card" style="border-top-color:var(--purple)">
+      <div class="stat-val" id="mitreCount" style="color:var(--purple)">0</div>
+      <div class="stat-lbl">MITRE Techniques</div>
+    </div>
+  </div>
+
+  <!-- CAMPAIGNS -->
+  <div class="campaigns-grid" id="campaignsGrid">
+    <div class="empty-state">
+      <div class="icon">🔍</div>
+      <h3>Analysing attack patterns...</h3>
+      <p>Loading campaign data from threat logs</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+
+const KNOWN_PATTERNS = [
+  {
+    name       : 'ICS Reconnaissance & Takeover',
+    sequence   : ['UNAUTHORIZED_ACCESS', 'COMMAND_INJECTION'],
+    severity   : 'CRITICAL',
+    description: 'Attacker gained access then immediately injected commands — classic ICS takeover pattern',
+    mitre_chain: ['T0801', 'T0836'],
+    real_example: 'Ukraine Power Grid Attack 2015',
+  },
+  {
+    name       : 'Stuxnet-Style Manipulation',
+    sequence   : ['UNAUTHORIZED_ACCESS', 'SPOOFING', 'COMMAND_INJECTION'],
+    severity   : 'CRITICAL',
+    description: 'Attacker accessed system, spoofed trusted device, then injected malicious commands — mirrors Stuxnet methodology',
+    mitre_chain: ['T0801', 'T0831', 'T0836'],
+    real_example: 'Stuxnet 2010 — Iran Nuclear Facility',
+  },
+  {
+    name       : 'DDoS + Exploitation',
+    sequence   : ['DDoS', 'COMMAND_INJECTION'],
+    severity   : 'HIGH',
+    description: 'DDoS used to distract operators while command injection executes — common ICS attack pattern',
+    mitre_chain: ['T0814', 'T0836'],
+    real_example: 'Triton/TRISIS Attack 2017',
+  },
+  {
+    name       : 'Persistent Access Campaign',
+    sequence   : ['UNAUTHORIZED_ACCESS', 'UNAUTHORIZED_ACCESS', 'UNAUTHORIZED_ACCESS'],
+    severity   : 'HIGH',
+    description: 'Repeated unauthorized access attempts indicate persistent attacker probing for weakness',
+    mitre_chain: ['T0801', 'T0801', 'T0801'],
+    real_example: 'Oldsmar Water Treatment Attack 2021',
+  },
+  {
+    name       : 'Full ICS Kill Chain',
+    sequence   : ['UNAUTHORIZED_ACCESS', 'SPOOFING', 'COMMAND_INJECTION', 'DDoS'],
+    severity   : 'CRITICAL',
+    description: 'Complete attack kill chain detected — system fully compromised',
+    mitre_chain: ['T0801', 'T0831', 'T0836', 'T0814'],
+    real_example: 'Advanced Persistent Threat — Nation State Level',
+  },
+];
+
+const COLORS = {
+  'COMMAND_INJECTION'  : '#ff1744',
+  'DDoS'               : '#ff6d00',
+  'SPOOFING'           : '#d500f9',
+  'UNAUTHORIZED_ACCESS': '#ffd600',
+  'NORMAL'             : '#00e676',
+};
+
+function sequenceMatches(actual, pattern) {
+  if (pattern.length > actual.length) return false;
+  let pi = 0;
+  for (const attack of actual) {
+    if (attack === pattern[pi]) pi++;
+    if (pi === pattern.length) return true;
+  }
+  return false;
+}
+
+function detectCampaigns(data) {
+  const attacks = data.filter(r => r.predicted_attack !== 'NORMAL');
+  const byIp    = {};
+
+  attacks.forEach(r => {
+    if (!byIp[r.source_ip]) byIp[r.source_ip] = [];
+    byIp[r.source_ip].push(r);
+  });
+
+  const campaigns = [];
+
+  Object.entries(byIp).forEach(([ip, events]) => {
+    if (events.length < 2) return;
+    const sequence = events.map(e => e.predicted_attack);
+
+    KNOWN_PATTERNS.forEach(pattern => {
+      if (sequenceMatches(sequence, pattern.sequence)) {
+        campaigns.push({
+          ...pattern,
+          source_ip   : ip,
+          devices     : [...new Set(events.map(e => e.device))],
+          events      : events.slice(0, 6),
+          event_count : events.length,
+          detected_at : events[events.length-1].timestamp,
+        });
+      }
+    });
+  });
+
+  return campaigns;
+}
+
+function renderCampaigns(campaigns) {
+  const grid = document.getElementById('campaignsGrid');
+
+  if (campaigns.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">✅</div>
+        <h3>No coordinated campaigns detected</h3>
+        <p>Network appears secure — monitoring continues</p>
+      </div>`;
+    return;
+  }
+
+  // Update stats
+  const uniqueIPs  = [...new Set(campaigns.map(c => c.source_ip))];
+  const allMitre   = [...new Set(campaigns.flatMap(c => c.mitre_chain))];
+  document.getElementById('totalCampaigns').textContent   = campaigns.length;
+  document.getElementById('criticalCampaigns').textContent = campaigns.filter(c => c.severity === 'CRITICAL').length;
+  document.getElementById('uniqueAttackers').textContent  = uniqueIPs.length;
+  document.getElementById('mitreCount').textContent       = allMitre.length;
+
+  grid.innerHTML = '';
+
+  campaigns.forEach(c => {
+    const mitreHtml = c.mitre_chain.map((m, i) =>
+      `<span class="mitre-tag">${m}</span>${i < c.mitre_chain.length-1 ? '<span class="mitre-arrow">→</span>' : ''}`
+    ).join('');
+
+    const eventsHtml = c.events.map(e => {
+      const col = COLORS[e.predicted_attack] || '#cdd6f4';
+      return `
+        <div class="timeline-event">
+          <div class="timeline-dot" style="background:${col}"></div>
+          <span style="color:${col}">${e.predicted_attack}</span>
+          <span style="color:var(--muted)">· ${e.device} · ${e.timestamp}</span>
+        </div>`;
+    }).join('');
+
+    grid.innerHTML += `
+      <div class="campaign-card ${c.severity}">
+        <div class="campaign-header">
+          <div>
+            <div class="campaign-name">${c.name}</div>
+            <div class="campaign-meta">
+              Source IP: ${c.source_ip} · ${c.event_count} events · Detected: ${c.detected_at}
+            </div>
+          </div>
+          <span class="severity-badge badge-${c.severity}">${c.severity}</span>
+        </div>
+
+        <div class="description-box">${c.description}</div>
+
+        <div class="campaign-body">
+          <div>
+            <div class="campaign-section-title">MITRE ATT&CK Chain</div>
+            <div class="mitre-chain">${mitreHtml}</div>
+          </div>
+          <div>
+            <div class="campaign-section-title">Affected Devices</div>
+            ${c.devices.map(d => `<div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--cyan);margin-bottom:3px">${d}</div>`).join('')}
+          </div>
+          <div>
+            <div class="campaign-section-title">Real World Example</div>
+            <div class="real-example">📖 ${c.real_example}</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="campaign-section-title">Attack Event Timeline</div>
+          <div class="event-timeline">${eventsHtml}</div>
+        </div>
+      </div>`;
+  });
+}
+
+// Load data
+Papa.parse('/data/predictions.csv', {
+  download      : true,
+  header        : true,
+  dynamicTyping : true,
+  complete({ data }) {
+    const campaigns = detectCampaigns(data.filter(r => r.timestamp));
+    renderCampaigns(campaigns);
+  }
+});
+</script>
+</body>
+</html>
