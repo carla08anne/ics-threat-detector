@@ -1,0 +1,190 @@
+{
+  "report_id": "INC-20260310-154107",
+  "generated_at": "2026-03-10 15:41:07",
+  "overall_severity": "CRITICAL",
+  "severity_icon": "\ud83d\udd34",
+  "total_events": 20,
+  "attack_types": [
+    "SPOOFING",
+    "UNAUTHORIZED_ACCESS",
+    "DDoS",
+    "COMMAND_INJECTION"
+  ],
+  "affected_devices": [
+    "PLC_01",
+    "PLC_02",
+    "PLC_03",
+    "SENSOR_02",
+    "SENSOR_01"
+  ],
+  "source_ips": [
+    "192.168.1.10",
+    "192.168.9.99",
+    "10.0.0.55",
+    "10.10.10.5",
+    "172.16.0.88"
+  ],
+  "mitre_ids": [
+    "T0801",
+    "T0831",
+    "T0814",
+    "T0836"
+  ],
+  "avg_confidence": 99.6,
+  "campaign": null,
+  "timeline": [
+    {
+      "time": "10:00:04",
+      "attack": "UNAUTHORIZED_ACCESS",
+      "device": "SENSOR_01",
+      "source_ip": "10.10.10.5",
+      "confidence": 100.0,
+      "severity": "MEDIUM"
+    },
+    {
+      "time": "10:00:04",
+      "attack": "UNAUTHORIZED_ACCESS",
+      "device": "SENSOR_02",
+      "source_ip": "10.10.10.5",
+      "confidence": 100.0,
+      "severity": "MEDIUM"
+    },
+    {
+      "time": "10:00:26",
+      "attack": "DDoS",
+      "device": "SENSOR_01",
+      "source_ip": "10.0.0.55",
+      "confidence": 100.0,
+      "severity": "HIGH"
+    },
+    {
+      "time": "10:00:33",
+      "attack": "COMMAND_INJECTION",
+      "device": "PLC_03",
+      "source_ip": "10.10.10.5",
+      "confidence": 99.0,
+      "severity": "CRITICAL"
+    },
+    {
+      "time": "10:00:38",
+      "attack": "UNAUTHORIZED_ACCESS",
+      "device": "PLC_01",
+      "source_ip": "10.0.0.55",
+      "confidence": 100.0,
+      "severity": "MEDIUM"
+    },
+    {
+      "time": "10:00:42",
+      "attack": "DDoS",
+      "device": "SENSOR_01",
+      "source_ip": "10.10.10.5",
+      "confidence": 100.0,
+      "severity": "HIGH"
+    },
+    {
+      "time": "10:00:59",
+      "attack": "COMMAND_INJECTION",
+      "device": "PLC_01",
+      "source_ip": "172.16.0.88",
+      "confidence": 100.0,
+      "severity": "CRITICAL"
+    },
+    {
+      "time": "10:01:12",
+      "attack": "DDoS",
+      "device": "SENSOR_01",
+      "source_ip": "172.16.0.88",
+      "confidence": 100.0,
+      "severity": "HIGH"
+    },
+    {
+      "time": "10:01:13",
+      "attack": "UNAUTHORIZED_ACCESS",
+      "device": "PLC_02",
+      "source_ip": "10.0.0.55",
+      "confidence": 100.0,
+      "severity": "MEDIUM"
+    },
+    {
+      "time": "10:01:14",
+      "attack": "UNAUTHORIZED_ACCESS",
+      "device": "PLC_03",
+      "source_ip": "192.168.9.99",
+      "confidence": 100.0,
+      "severity": "MEDIUM"
+    }
+  ],
+  "mitre_details": [
+    {
+      "name": "Monitor Process State",
+      "tactic": "Collection",
+      "impact": "Attacker monitored process state to identify targets"
+    },
+    {
+      "name": "Manipulation of Control",
+      "tactic": "Impair Process Control",
+      "impact": "Attacker manipulated control systems to alter physical processes"
+    },
+    {
+      "name": "Denial of Service",
+      "tactic": "Inhibit Response Function",
+      "impact": "Attacker disrupted availability of ICS components"
+    },
+    {
+      "name": "Modify Parameter",
+      "tactic": "Impair Process Control",
+      "impact": "Attacker modified PLC parameters to cause physical damage"
+    }
+  ],
+  "recommended_actions": [
+    {
+      "priority": "IMMEDIATE",
+      "action": "Block source IPs at perimeter firewall: 192.168.1.10, 192.168.9.99, 10.0.0.55"
+    },
+    {
+      "priority": "IMMEDIATE",
+      "action": "Isolate affected PLCs from network: PLC_01, PLC_02, PLC_03"
+    },
+    {
+      "priority": "IMMEDIATE",
+      "action": "Switch affected PLCs to manual/local control mode"
+    },
+    {
+      "priority": "IMMEDIATE",
+      "action": "Verify IP-MAC bindings on all trusted devices"
+    },
+    {
+      "priority": "IMMEDIATE",
+      "action": "Enable dynamic ARP inspection on all switches"
+    },
+    {
+      "priority": "IMMEDIATE",
+      "action": "Enable rate limiting \u2014 max 50 packets/second per device"
+    },
+    {
+      "priority": "IMMEDIATE",
+      "action": "Force password reset on all SCADA operator accounts"
+    },
+    {
+      "priority": "SHORT_TERM",
+      "action": "Conduct full forensic analysis of affected devices"
+    },
+    {
+      "priority": "SHORT_TERM",
+      "action": "Review and update network segmentation policies"
+    },
+    {
+      "priority": "SHORT_TERM",
+      "action": "File regulatory incident report within 72 hours"
+    },
+    {
+      "priority": "LONG_TERM",
+      "action": "Deploy network segmentation between OT and IT networks"
+    },
+    {
+      "priority": "LONG_TERM",
+      "action": "Implement multi-factor authentication on all ICS access points"
+    }
+  ],
+  "executive_summary": "SentinelOT detected a CRITICAL severity security incident involving 20 suspicious events across 5 industrial devices. Attack types identified: SPOOFING, UNAUTHORIZED_ACCESS, DDoS, COMMAND_INJECTION. Primary affected devices: PLC_01, PLC_02, PLC_03. Attacks originated from 5 unique source IP(s) including 192.168.1.10, 192.168.9.99. Average model confidence: 99.6%. Immediate containment actions have been recommended. Full forensic investigation is advised."
+}
