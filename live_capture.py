@@ -1,4 +1,5 @@
 from scapy.all import sniff, IP, TCP, UDP
+from threat_intel import check_ip_abuse
 from flask import Flask, jsonify
 from flask_cors import CORS
 import pickle
@@ -189,14 +190,18 @@ def handle_packet(packet):
     features = extract_features(packet)
     if not features:
         return
+    # ── THREAT INTELLIGENCE CHECK ─────────────────
+    abuse_score = check_ip_abuse(features['source_ip'])
+    features['abuse_score'] = abuse_score
 
     result   = predict_threat(features)
 
     # Build full event
     event = {**features, **result}
+    event['abuse_score'] = features.get('abuse_score', 0)
 
     # Get defense recommendation if attack
-    if result['predicted_attack'] != 'NORMAL':
+    if result['predicted_attack'] != 'NORMAL' or features['abuse_score'] > 60:
         defense = get_defense_recommendation(
             result['predicted_attack'],
             features['device'],
@@ -225,7 +230,8 @@ def handle_packet(packet):
         print(f"🚨 {result['severity']:<8} | "
               f"{features['source_ip']:<16} | "
               f"{result['predicted_attack']:<25} | "
-              f"{result['confidence']}% confident")
+              f"{result['confidence']}% confident"
+              f"AbuseScore={features['abuse_score']}")
     else:
         print(f"✅ NORMAL   | "
               f"{features['source_ip']:<16} | "
