@@ -1,0 +1,51 @@
+{
+  "PLC-01": {
+    "description": "Water pump",
+    "max_rate_per_second": 10,
+    "min_value": 0,
+    "max_value": 100,
+    "parameter": "pump_speed_%"
+  },
+  "PLC-02": {
+    "description": "Pressure reg",
+    "max_rate_per_second": 5,
+    "min_value": 0,
+    "max_value": 200,
+    "parameter": "pressure_psi"
+  },
+  "PLC-03": {
+    "description": "Temp controller",
+    "max_rate_per_second": 2,
+    "min_value": -10,
+    "max_value": 150,
+    "parameter": "temp_celsius"
+  },
+  "RTU-01": {
+    "description": "Flow rate",
+    "max_rate_per_second": 15,
+    "min_value": 0,
+    "max_value": 500,
+    "parameter": "flow_rate_lpm"
+  },
+  "RTU-02": {
+    "description": "Valve ctrl",
+    "max_rate_per_second": 8,
+    "min_value": 0,
+    "max_value": 100,
+    "parameter": "valve_open_%"
+  },
+  "HMI-01": {
+    "description": "HMI 1",
+    "max_rate_per_second": 20,
+    "min_value": 0,
+    "max_value": 1000,
+    "parameter": "setpoint"
+  },
+  "HMI-02": {
+    "description": "HMI 2",
+    "max_rate_per_second": 20,
+    "min_value": 0,
+    "max_value": 1000,
+    "parameter": "setpoint"
+  }
+}
