@@ -104,6 +104,14 @@
   </style>
 </head>
 <body>
+<nav style="background:#080c18;border-bottom:1px solid #1a2844;padding:8px 28px;display:flex;gap:4px;position:sticky;top:0;z-index:999;">
+  <a href="index.html" style="padding:7px 14px;border-radius:6px;font-size:0.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-decoration:none;color:#4a5568;">📊 Dashboard</a>
+  <a href="simulation.html" style="padding:7px 14px;border-radius:6px;font-size:0.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-decoration:none;color:#4a5568;">⚡ Simulation</a>
+  <a href="topology.html" style="padding:7px 14px;border-radius:6px;font-size:0.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-decoration:none;color:#4a5568;">🌐 Topology</a>
+  <a href="campaigns.html" style="padding:7px 14px;border-radius:6px;font-size:0.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-decoration:none;color:#4a5568;">⛓ Campaigns</a>
+  <a href="physics_tab.html" style="padding:7px 14px;border-radius:6px;font-size:0.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-decoration:none;color:#4a5568;">⚗️ Physics</a>
+  <a href="swarm_tab.html" style="padding:7px 14px;border-radius:6px;font-size:0.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;text-decoration:none;color:#4a5568;">🐝 Swarm</a>
+</nav>
 <header>
   <div class="logo">
     <div class="logo-icon">🛡</div>
@@ -208,7 +216,7 @@ var GEO = {
   '192.168.1.10':{country:'Internal LAN',flag:'🏠'},'192.168.1.11':{country:'Internal LAN',flag:'🏠'},
   '192.168.1.12':{country:'Internal LAN',flag:'🏠'}
 };
-Papa.parse('/data/predictions.csv', {
+Papa.parse('../data/predictions.csv', {
   download: true, header: true, dynamicTyping: true,
   complete: function(results) {
     var filtered = results.data.filter(function(r) { return r.timestamp; });
